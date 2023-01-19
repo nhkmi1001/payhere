@@ -18,12 +18,7 @@ class UserManager(BaseUserManager):
         user.save(using=self._db)
         return user
     
-# class TimestampZone(models.Model):
-#     created_at = models.DateTimeField(auto_now_add=True)
-#     updated_at = models.DateTimeField(auto_now=True)
-    
-#     class Meta:
-#         abstract = True
+
         
 class User(AbstractBaseUser):
     email = models.EmailField("이메일", max_length=256, unique=True)
