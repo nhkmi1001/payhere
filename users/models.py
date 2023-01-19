@@ -28,7 +28,7 @@ class TimestampZone(models.Model):
 class User(TimestampZone):
     email = models.EmailField("이메일", max_length=256, unique=True)
     is_admin = models.BooleanField("관리자", default=False)
-    is_active = models.BooleanField("관리자", default=True)
+    is_active = models.BooleanField("권한", default=True)
     
     objects = UserManager()
     
