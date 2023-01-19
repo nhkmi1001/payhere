@@ -18,22 +18,24 @@ class UserManager(BaseUserManager):
         user.save(using=self._db)
         return user
     
-class TimestampZone(models.Model):
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+# class TimestampZone(models.Model):
+#     created_at = models.DateTimeField(auto_now_add=True)
+#     updated_at = models.DateTimeField(auto_now=True)
     
-    class Meta:
-        abstract = True
+#     class Meta:
+#         abstract = True
         
-class User(TimestampZone):
+class User(AbstractBaseUser):
     email = models.EmailField("이메일", max_length=256, unique=True)
     is_admin = models.BooleanField("관리자", default=False)
     is_active = models.BooleanField("권한", default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
     
     objects = UserManager()
     
     USERNAME_FIELD = "email"
-    REQUIRED_FIELDS = ["email"]
+    REQUIRED_FIELDS = []
     
     def __str__(self):
         return self.email
