@@ -5,5 +5,6 @@ from . import views
 urlpatterns = [
     path('<int:user_id>/', views.RecordView.as_view(), name="record_view"),
     path('<int:user_id>/<int:record_id>/', views.DetailRecordView.as_view(), name="detail_record_view"),
-       
+    path('<int:user_id>/<int:record_id>/copy/', views.RecordCopyView.as_view(), name="record_copy_view"),
+    
 ]
