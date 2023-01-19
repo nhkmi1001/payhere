@@ -35,7 +35,7 @@ class UserSignupTestCase(APITestCase):
     
     # 회원가입 실패(이메일 중복)
     def test_signup_email_unique_fail(self):
-        User.objects.create_user("test@test.com", "Test1234!", "Test1234!")
+        User.objects.create_user("test@test.com", "Test1234!")
         user_data = {
             "email": "test@test.com",
             "password": "Test1234!",
@@ -123,3 +123,80 @@ class UserUpdateTestCase(APITestCase):
         )
         self.assertEqual(response.status_code, 200)
     
+    # 회원정보 수정 실패(이메일 빈칸)
+    def test_user_update_email_blank_fail(self):
+        response = self.client.put(
+            path = reverse("user_view"),
+            HTTP_AUTHORIZATION = f"Bearer {self.access_token}",
+            data={"email": ""},
+        )
+        self.assertEqual(response.status_code, 400)
+    
+    # 회원정보 수정 실패(이메일 중복)
+    def test_user_update_email_blank_fail(self):
+        response = self.client.put(
+            path = reverse("user_view"),
+            HTTP_AUTHORIZATION = f"Bearer {self.access_token}",
+            data={"email": "test@test.com"},
+        )
+        self.assertEqual(response.status_code, 400)
+        
+    # 회원정보 수정 실패(이메일 형식)
+    def test_user_update_email_blank_fail(self):
+        response = self.client.put(
+            path = reverse("user_view"),
+            HTTP_AUTHORIZATION = f"Bearer {self.access_token}",
+            data={"email": "test"},
+        )
+        self.assertEqual(response.status_code, 400)
+
+class UserDeleteTestCase(APITestCase):
+    @classmethod
+    def setUpTestData(self):
+        self.user_data = {"email": "test@test.com", "password": "Test1234!"}
+        self.user1 = User.objects.create_user("test@test.com", "Test1234!")
+    
+    def setUp(self):
+        self.access_token = self.client.post(reverse("token_obtain_pair_view"), self.user_data).data["access"]
+    
+    # 회원 탈퇴
+    def test_user_delete_success(self):
+        response = self.client.delete(
+            path = reverse("user_view"),
+            HTTP_AUTHORIZATION = f"Bearer {self.access_token}"
+        )    
+        self.assertEqual(response.status_code, 200)
+
+class UserLoginLogoutTestCase(APITestCase):
+    @classmethod
+    def setUpTestData(self):
+        self.user_success_data = {"email": "test@test.com", "password": "Test1234!"}
+        self.user_fail_data = {"email": "test1@test.com", "password": "Test1234!!"}
+        self.user1 = User.objects.create_user("test@test.com", "Test1234!")
+    
+    def setUp(self):
+        self.access_token = self.client.post(reverse("token_obtain_pair_view"), self.user_success_data).data["access"]
+    
+    # 로그인 성공
+    def test_login_success(self):
+        response = self.client.post(
+            reverse("token_obtain_pair_view"), 
+            self.user_success_data
+            )
+        self.assertEqual(response.status_code, 200)
+
+    # 로그인 실패    
+    def test_login_fail(self):
+        response = self.client.post(
+            reverse("token_obtain_pair_view"), 
+            self.user_fail_data
+            )
+        self.assertEqual(response.status_code, 401)
+    
+    # 로그아웃
+    def test_logout(self):
+        response = self.client.post(
+            path = reverse("logout_view"),
+            HTTP_AUTHORIZATION=f"Bearer {self.access_token}"
+        )
+        self.assertEqual(response.status_code, 200)

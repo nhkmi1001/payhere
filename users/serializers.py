@@ -4,7 +4,7 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from django.forms import ValidationError
 import re
 
-# 회원가입
+# 회원가입 serializer
 class UserSerializer(serializers.ModelSerializer):
     passwordcheck = serializers.CharField(style={'input_type':'password'}, required=False)
     
@@ -47,6 +47,9 @@ class UserSerializer(serializers.ModelSerializer):
         if password != passwordcheck:
             raise serializers.ValidationError(detail={"password": "비밀번호가 다릅니다. 확인해주세요."})
 
+        # 이메일 존재 여부
+        if (User.objects.filter(email=data['email']).exists()):
+            raise serializers(detail={"email": "이미 사용중인 이메일입니다."})
         return data
     
     def create(self, validated_data):
@@ -58,11 +61,6 @@ class UserSerializer(serializers.ModelSerializer):
         
         return user
     
-    def update(self, obj, validated_data):
-        obj.email = validated_data.get("email", obj.email)
-        obj.save()
-        
-        return obj
     
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     @classmethod
@@ -71,3 +69,25 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         token['email'] = user.email
 
         return token
+
+
+# 회원정보 수정 serializer
+class UserUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ("email", )
+        extra_kwargs = {
+            "email": {
+                "error_messages": {
+                    "required": "이메일을 입력해주세요.",
+                    "invalid": "형식을 맞춰주세요.",
+                    "blank": "이메일을 입력해주세요."
+                }
+            }
+        }
+        def update(self, obj, validated_data):
+            obj.email = validated_data.get("email", obj.email)
+            obj.save()
+            
+            return obj
+            
