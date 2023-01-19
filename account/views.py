@@ -41,6 +41,11 @@ class DetailRecordView(APIView):
         serializer = RecordSerializer(record)
         return Response(serializer.data, status=status.HTTP_200_OK)
     
+    @swagger_auto_schema(
+        request_body=RecordSerializer,
+        operation_summary="가게부 수정",
+        responses={200: "성공", 400: "인풋값 에러", 401: "인증 에러", 500: "서버 에러"},
+    )
     def put(self, request, user_id, record_id):
         record = get_object_or_404(Record, user=user_id, id=record_id)
         serializer = RecordSerializer(record, data=request.data, partial=True)
@@ -49,7 +54,27 @@ class DetailRecordView(APIView):
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
+    @swagger_auto_schema(
+        operation_summary="가게부 삭제",
+        responses={200: "성공", 401: "인증 에러", 403: "접근 권한 없음", 404: "내용 없음", 500: "서버 에러"},
+    )    
     def delete(self, request, user_id, record_id):
         record = get_object_or_404(Record, user=user_id, id=record_id)
         record.delete()
         return Response(status=status.HTTP_200_OK)
+
+class RecordCopyView(APIView):
+    permission_classes = [IsAuthenticated]
+    
+    @swagger_auto_schema(
+        operation_summary="가게부 복제",
+        responses={200: "성공", 401: "인증 에러", 404: "찾을 수 없음", 500: "서버 에러"},
+    )    
+    def post(self, request, user_id, record_id):
+        record = get_object_or_404(Record, user=user_id, id=record_id)
+        record.id = None
+        serializer = RecordSerializer(record, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
