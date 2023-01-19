@@ -49,6 +49,7 @@ class CustomTokenObtainPairView(TokenObtainPairView):
     
 # 로그아웃
 class LogoutView(APIView):
+    parser_classes = [IsAuthenticated]
     def post(self, request):
         logout(request)
-        return Response({"message": "로그아웃 완료"})
+        return Response({"message": "로그아웃 완료"}, status=status.HTTP_200_OK)
