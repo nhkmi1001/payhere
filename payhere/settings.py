@@ -21,7 +21,7 @@ SECRET_KEY = get_secret("SECRET_KEY")
 DEV_MODE = True
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["*"]
 
 SITE_URL = "http://127.0.0.1:8000/"
 # Application definition

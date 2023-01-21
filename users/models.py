@@ -24,8 +24,8 @@ class User(AbstractBaseUser):
     email = models.EmailField("이메일", max_length=256, unique=True)
     is_admin = models.BooleanField("관리자", default=False)
     is_active = models.BooleanField("권한", default=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+    created_at = models.DateTimeField("생성일", auto_now_add=True)
+    updated_at = models.DateTimeField("업데이트일", auto_now=True)
     
     
     objects = UserManager()
