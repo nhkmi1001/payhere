@@ -11,6 +11,7 @@ from django.utils import timezone
 from datetime import timedelta
 from .utils import *
 from django.conf import settings
+from django.db import transaction
 
 class RecordView(APIView):
     permission_classes = [IsAuthenticated]
@@ -65,11 +66,12 @@ class DetailRecordView(APIView):
     @swagger_auto_schema(
         operation_summary="가게부 삭제",
         responses={200: "성공", 401: "인증 에러", 403: "접근 권한 없음", 404: "내용 없음", 500: "서버 에러"},
-    )    
+    )
     def delete(self, request, user_id, record_id):
         record = get_object_or_404(Record, user=user_id, id=record_id)
         if user_id == request.user.id:
-            record.delete()
+            with transaction.atomic():
+                record.delete()
             return Response({"message": "가게부 삭제완료!"}, status=status.HTTP_200_OK)
         return Response({"error": "작성자가 아닙니다."}, status=status.HTTP_401_UNAUTHORIZED)
 
