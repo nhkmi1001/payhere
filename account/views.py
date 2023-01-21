@@ -53,12 +53,14 @@ class DetailRecordView(APIView):
     )
     def put(self, request, user_id, record_id):
         record = get_object_or_404(Record, user=user_id, id=record_id)
-        serializer = RecordSerializer(record, data=request.data, partial=True)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
+        user = get_object_or_404(User, id=request.user.id)
+        if user.id == record.user.id:
+            serializer = RecordSerializer(record, data=request.data, partial=True)
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data, status=status.HTTP_200_OK)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"error": "수정 권한이 없습니다."}, status=status.HTTP_401_UNAUTHORIZED)
     # 가게부 삭제
     @swagger_auto_schema(
         operation_summary="가게부 삭제",
@@ -69,7 +71,7 @@ class DetailRecordView(APIView):
         if user_id == request.user.id:
             record.delete()
             return Response({"message": "가게부 삭제완료!"}, status=status.HTTP_200_OK)
-        return Response({"error": "작성자가 아닙니다."}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"error": "작성자가 아닙니다."}, status=status.HTTP_401_UNAUTHORIZED)
 
 class RecordCopyView(APIView):
     permission_classes = [IsAuthenticated]
@@ -81,13 +83,15 @@ class RecordCopyView(APIView):
     )    
     def post(self, request, user_id, record_id):
         record = get_object_or_404(Record, user=user_id, id=record_id)
+        user = get_object_or_404(User, id=user_id)
         record.id = None
-        serializer = RecordSerializer(record, data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
+        if user.id == request.user.id:
+            serializer = RecordSerializer(record, data=request.data)
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data, status=status.HTTP_200_OK)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"error": "작성자가 아닙니다."}, status=status.HTTP_401_UNAUTHORIZED)
 class UrlShareView(APIView):
     permission_classes = [IsAuthenticated]
     
@@ -95,9 +99,11 @@ class UrlShareView(APIView):
     def get(self, request, record_id):
         record = get_object_or_404(Record, id=record_id)
         url = Url.objects.filter(record=record).order_by("-id")
-        serializer = UrlSerializer(url, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
-        
+        if record.user.id == request.user.id:
+            serializer = UrlSerializer(url, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response({"error": "작성자가 아닙니다."}, status=status.HTTP_401_UNAUTHORIZED)
+
     # 가게부 공유
     @swagger_auto_schema(
         operation_summary="가게부 공유",
@@ -132,10 +138,10 @@ class UrlValidView(APIView):
     
     # 가게부 공유 유효기간 체크
     def get(self, request, url_id):
-        link = get_object_or_404(Url, id=url_id)
-        if link.end_date > timezone.now():
-            record = Record.objects.get(id=link.record.id)
-            serializer = UrlSerializer(record)
+        url = get_object_or_404(Url, id=url_id)
+        if url.end_date > timezone.now():
+            record = Record.objects.get(id=url.record.id)
+            serializer = RecordSerializer(record)
             return Response(serializer.data, status=status.HTTP_200_OK)
         
         return Response({"error": "유효기간이 지났습니다."}, status=status.HTTP_400_BAD_REQUEST)
@@ -153,4 +159,4 @@ class UrlValidView(APIView):
             link.delete()
             return Response({"message": "공유 삭제"}, status=status.HTTP_200_OK)
         
-        return Response({"error": "공유자가 아닙니다."}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"error": "공유자가 아닙니다."}, status=status.HTTP_401_UNAUTHORIZED)

@@ -19,8 +19,7 @@ def get_secret(setting, secrets=secrets):
 SECRET_KEY = get_secret("SECRET_KEY")
 
 DEV_MODE = True
-
-DEBUG = True if DEV_MODE else False
+DEBUG = True
 
 ALLOWED_HOSTS = []
 
@@ -75,9 +74,6 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'payhere.wsgi.application'
 
-
-# Database
-# https://docs.djangoproject.com/en/4.1/ref/settings/#databases
 if DEV_MODE:
     DATABASES = {
         'default': {

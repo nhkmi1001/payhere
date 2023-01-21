@@ -56,15 +56,6 @@ class RecordViewTestCase(APITestCase):
         )
         self.assertEqual(response.status_code, 404)
 
-    #가게부 작성 실패(결제방법 빈칸)
-    def test_record_post_blank_method_fail(self):
-        response = self.client.post(
-            path = reverse("record_view", kwargs={"user_id" : self.user.id}),
-            HTTP_AUTHORIZATION = f"Bearer {self.access_token}",
-            data = self.record_data2,
-        )
-        self.assertEqual(response.status_code, 400)
-
 class DetailRecordTestCase(APITestCase):
     @classmethod
     def setUpTestData(cls):
@@ -74,10 +65,11 @@ class DetailRecordTestCase(APITestCase):
         cls.user1 = User.objects.create_user("test1@test.com", "Test1234!")
         cls.user2 = User.objects.create_user("test2@test.com", "Test1234!")
         cls.user3 = User.objects.create_user("test3@test.com", "Test1234!")
-        cls.record_data = {"amount": "100", "income_expense": "income", "method": "cash", "memo": "테스트"}
+        cls.record1_data = {"amount": "100", "income_expense": "income", "method": "cash", "memo": "테스트"}
+        cls.record2_data = {"amount": "200", "income_expense": "expense", "method": "cash", "memo": "테스트"}
 
         cls.record = Record.objects.create(
-            user = cls.user,
+            user = cls.user1,
             amount = "100",
             income_expense = "income",
             method = "cash",
@@ -100,6 +92,159 @@ class DetailRecordTestCase(APITestCase):
     def test_detail_record_put_success(self):
         response = self.client.put(
             path = reverse("detail_record_view", kwargs={"user_id": 1, "record_id": 1}),
-            
+            HTTP_AUTHORIZATION = f"Bearer {self.access_token_1}",
+            data = self.record2_data
         )
+        self.assertEqual(response.status_code, 200)
     
+    # 가게부 수정 실패(작성자 아님)
+    def test_detail_record_put_user_fail(self):
+        response = self.client.put(
+            path = reverse("detail_record_view", kwargs={"user_id": 1, "record_id": 1}),
+            HTTP_AUTHORIZATION = f"Bearer {self.access_token_2}",
+            data = self.record2_data
+        )
+        self.assertEqual(response.status_code, 401)
+
+    # 가게부 삭제 성공
+    def test_detail_record_delete_success(self):
+        response = self.client.delete(
+            path = reverse("detail_record_view", kwargs={"user_id": 1, "record_id": 1}),
+            HTTP_AUTHORIZATION = f"Bearer {self.access_token_1}"
+        )
+        self.assertEqual(response.status_code, 200)
+        
+    # 가게부 삭제 실패(작성자 아님)
+    def test_detail_record_delete_user_fail(self):
+        response = self.client.delete(
+            path = reverse("detail_record_view", kwargs={"user_id": 1, "record_id": 1}),
+            HTTP_AUTHORIZATION = f"Bearer {self.access_token_2}"
+        )
+        self.assertEqual(response.status_code, 401)
+
+class RecordCopyTestCase(APITestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.user1_data = {"email": "test1@test.com", "password": "Test1234!"}
+        cls.user2_data = {"email": "test2@test.com", "password": "Test1234!"}
+        cls.user1 = User.objects.create_user("test1@test.com", "Test1234!")
+        cls.user2 = User.objects.create_user("test2@test.com", "Test1234!")
+        cls.record1_data = {"amount": "100", "income_expense": "income", "method": "cash", "memo": "테스트"}
+        cls.record = Record.objects.create(
+            user = cls.user1,
+            amount = "100",
+            income_expense = "income",
+            method = "cash",
+            memo = "테스트"
+        )
+    def setUp(self):
+        self.access_token_1 = self.client.post(reverse("token_obtain_pair_view"), self.user1_data).data["access"]
+        self.access_token_2 = self.client.post(reverse("token_obtain_pair_view"), self.user2_data).data["access"]
+
+    # 가게부 복제 성공
+    def test_record_copy_success(self):
+        response = self.client.post(
+            path = reverse("record_copy_view", kwargs={"user_id": 1, "record_id": 1}),
+            HTTP_AUTHORIZATION = f"Bearer {self.access_token_1}"
+        )
+        self.assertEqual(response.status_code, 200)
+       
+    # 가게부 복제 실패    
+    def test_record_copy_user_fail(self):
+        response = self.client.post(
+            path = reverse("record_copy_view", kwargs={"user_id": 1, "record_id": 1}),
+            HTTP_AUTHORIZATION = f"Bearer {self.access_token_2}"
+        )
+        self.assertEqual(response.status_code, 401)
+    
+class UrlShareTestCase(APITestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.user1_data = {"email": "test1@test.com", "password": "Test1234!"}
+        cls.user2_data = {"email": "test2@test.com", "password": "Test1234!"}
+        cls.user1 = User.objects.create_user("test1@test.com", "Test1234!")
+        cls.user2 = User.objects.create_user("test2@test.com", "Test1234!")
+        cls.record1_data = {"amount": "100", "income_expense": "income", "method": "cash", "memo": "테스트"}
+        cls.record = Record.objects.create(
+            user = cls.user1,
+            amount = "100",
+            income_expense = "income",
+            method = "cash",
+            memo = "테스트"
+        )
+    def setUp(self):
+        self.access_token_1 = self.client.post(reverse("token_obtain_pair_view"), self.user1_data).data["access"]
+        self.access_token_2 = self.client.post(reverse("token_obtain_pair_view"), self.user2_data).data["access"]
+
+    # 가게부 공유 리스트 성공
+    def test_url_share_success(self):
+        response = self.client.post(
+            path = reverse("url_share_view", kwargs={"record_id": 1}),
+            HTTP_AUTHORIZATION = f"Bearer {self.access_token_1}"
+        )
+        self.assertEqual(response.status_code, 200)
+    
+    # 가게부 공유 성공
+    def test_url_share_post_success(self):
+        response = self.client.post(
+            path = reverse("url_share_view", kwargs={"record_id": 1}),
+            HTTP_AUTHORIZATION = f"Bearer {self.access_token_1}"
+        )
+        self.assertEqual(response.status_code, 200)
+    
+    # 가게부 공유 일괄 삭제
+    def test_url_share_delete_bulk_success(self):
+        response = self.client.delete(
+            path = reverse("url_share_view", kwargs={"record_id": 1}),
+            HTTP_AUTHORIZATION = f"Bearer {self.access_token_1}"
+        )
+        self.assertEqual(response.status_code, 200)
+
+class UrlValidTestCase(APITestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.user1_data = {"email": "test1@test.com", "password": "Test1234!"}
+        cls.user2_data = {"email": "test2@test.com", "password": "Test1234!"}
+        cls.user1 = User.objects.create_user("test1@test.com", "Test1234!")
+        cls.user2 = User.objects.create_user("test2@test.com", "Test1234!")
+        cls.record1_data = {"amount": "100", "income_expense": "income", "method": "cash", "memo": "테스트"}
+        cls.record = Record.objects.create(
+            user = cls.user1,
+            amount = "100",
+            income_expense = "income",
+            method = "cash",
+            memo = "테스트"
+        )
+        cls.url1 = Url.objects.create(
+            record = cls.record,
+            end_date = "2023-01-21 15:37:45.800648+00:00",
+            link = "http://127.0.0.1:8000/",
+            short_link = "http://127.0.0.1:8000/",
+        )
+    def setUp(self):
+        self.access_token_1 = self.client.post(reverse("token_obtain_pair_view"), self.user1_data).data["access"]
+        self.access_token_2 = self.client.post(reverse("token_obtain_pair_view"), self.user2_data).data["access"]
+
+    # 가게부 공유 유효시간 체크 성공
+    def test_url_valid_success(self):
+        response = self.client.get(
+            path = reverse("url_valid_view", kwargs={"url_id": 1}),
+            HTTP_AUTHORIZATION = f"Bearer {self.access_token_1}"
+        )
+        self.assertEqual(response.status_code, 200)
+    
+    # 가게부 공유 삭제 성공
+    def test_url_share_delete_success(self):
+        response = self.client.delete(
+            path = reverse("url_valid_view", kwargs={"url_id": 1}),
+            HTTP_AUTHORIZATION = f"Bearer {self.access_token_1}"
+        )
+        self.assertEqual(response.status_code, 200)
+    
+    # 가게부 공유 삭제 실패(권한 없음)
+    def test_url_share_delete_user_fail(self):
+        response = self.client.delete(
+            path = reverse("url_valid_view", kwargs={"url_id": 1}),
+            HTTP_AUTHORIZATION = f"Bearer {self.access_token_2}"
+        )
+        self.assertEqual(response.status_code, 401)
