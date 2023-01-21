@@ -2,6 +2,7 @@ from pathlib import Path
 from datetime import timedelta
 import os, json
 from django.core.exceptions import ImproperlyConfigured
+import pymysql
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -17,8 +18,9 @@ def get_secret(setting, secrets=secrets):
     
 SECRET_KEY = get_secret("SECRET_KEY")
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEV_MODE = True
+
+DEBUG = True if DEV_MODE else False
 
 ALLOWED_HOSTS = []
 
@@ -36,6 +38,7 @@ INSTALLED_APPS = [
     #packages
     'rest_framework',
     'rest_framework_simplejwt',
+    'drf_yasg',
     
     #app
     'users',
@@ -75,14 +78,27 @@ WSGI_APPLICATION = 'payhere.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/4.1/ref/settings/#databases
-
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+if DEV_MODE:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
     }
-}
-
+else:
+    pymysql.install_as_MySQLdb()
+    DATABASES = {
+        'default' : {
+            'ENGINE': 'django.db.backends.mysql',
+            'NAME': get_secret("MYSQL_NAME"),
+            'USER': get_secret("MYSQL_USER"),
+            'PASSWORD': get_secret("MYSQL_PASSWORD"),
+            'HOST': get_secret("MYSQL_HOST"),
+            'PORT': get_secret("MYSQL_PORT"),
+        }
+    }
+    
+    
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',

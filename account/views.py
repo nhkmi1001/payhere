@@ -15,14 +15,12 @@ from django.conf import settings
 class RecordView(APIView):
     permission_classes = [IsAuthenticated]
     
-    # 가계부 전체 리스트
+    # 가게부 전체 리스트
     def get(self, request, user_id):
         user = User.objects.get(id=user_id)
-        if user:
-            record = Record.objects.filter(user=user).order_by("-created_at")
-            serializer = RecordSerializer(record, many=True)
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        return Response(status=status.HTTP_400_BAD_REQUEST)
+        record = Record.objects.filter(user=user).order_by("-created_at")
+        serializer = RecordSerializer(record, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
     
     # 가게부 작성
     @swagger_auto_schema(
@@ -30,10 +28,11 @@ class RecordView(APIView):
         operation_summary="가게부 작성",
         responses={200:"성공", 400:"잘못된 요청", 401:"권한 없음", 500:"서버 에러"}
     )
-    def post(self, request):
+    def post(self, request, user_id):
+        user = get_object_or_404(User, id=user_id)
         serializer = RecordSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save(user=request.user)
+            serializer.save(user=user)
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
