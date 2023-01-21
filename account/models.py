@@ -26,4 +26,9 @@ class Record(TimestampZone):
         choices=settlement_method, null=False, default=settlement_method[0][0], max_length=20
     )
     memo = models.CharField(max_length=300, null=True, blank=True)
-    
+
+class Url(models.Model):
+    record = models.ForeignKey(Record, on_delete=models.CASCADE)
+    end_date = models.DateTimeField()
+    link = models.URLField(max_length=200)
+    short_link = models.URLField(default="")
