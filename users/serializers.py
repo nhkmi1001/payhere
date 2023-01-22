@@ -3,7 +3,22 @@ from users.models import User
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from django.forms import ValidationError
 import re
+from users.token import account_activation_token
+from django.template.loader import render_to_string
+from django.utils.http import urlsafe_base64_encode
+from django.utils.encoding import force_bytes
+from django.core.mail import EmailMessage
+from django.contrib.auth.hashers import check_password
+import threading
 
+class EmailThread(threading.Thread):
+    def __init__(self, email):
+        self.email = email
+        threading.Thread.__init__(self)
+        
+    def run(self):
+        self.email.send()
+    
 # 회원가입 serializer
 class UserSerializer(serializers.ModelSerializer):
     passwordcheck = serializers.CharField(style={'input_type':'password'}, required=False)
@@ -25,9 +40,31 @@ class UserSerializer(serializers.ModelSerializer):
                     "invalid": "이메일 형식을 확인해주세요.",
                     "blank": "이메일을 입력해주세요."
                 }
+            },
+            "passwordcheck":{
+                "read_only": True,
             }
         }
-        
+    def create(self, validated_data):
+        email = validated_data["email"]
+        user = User(email=email)
+        password = user.password
+        user.set_password(password)
+        user.is_active = False
+        user.save()
+        message = render_to_string('user/account_activate_email.html', {
+          'user': user,
+          'domain': 'localhost:8000',
+          'uid': urlsafe_base64_encode(force_bytes(user.pk)),
+          'token': account_activation_token.make_token(user),
+        })
+        mail_subject = 'Payhere 회원가입 인증 이메일입니다.'
+        to_email = user.email
+        email = EmailMessage(mail_subject, message, to=[to_email])
+        EmailThread(email).start()
+        email.content_subtype = "html"
+        return validated_data    
+    
     def validate(self, data):
         REGEX_EMAIL        = '^[a-zA-Z0-9+-_.]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'
         REGEX_PASSWORD     = '^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,16}$'
@@ -52,14 +89,7 @@ class UserSerializer(serializers.ModelSerializer):
             raise serializers(detail={"email": "이미 사용중인 이메일입니다."})
         return data
     
-    def create(self, validated_data):
-        email = validated_data["email"]
-        
-        user = User(email=email)
-        user.set_password(validated_data["password"])
-        user.save()
-        
-        return user
+
     
     
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
