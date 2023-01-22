@@ -28,6 +28,7 @@
 |User|회원가입|POST|/users/
 |User|회원정보 수정|PUT|/users/
 |User|회원탈퇴|DELETE|/users/
+|User|이메일인증|GET|/users/activate/<str:uidb64>/<str:token>/
 |User|로그인|POST|/users/api/token/
 |User|로그아웃|POST|/users/logout/
 |Account|가게부 전체 리스트|GET|/account/<int:user_id>/
@@ -51,6 +52,7 @@
   ## 요구 사항 내용 및 설명
   ### 1. 고객은 이메일과 비밀번호 입력을 통해서 회원 가입을 할 수 있습니다.
   - JWT토큰을 활용해 구현
+  - 이메일 인증 구현
   ### 2. 고객은 회원 가입이후, 로그인과 로그아웃을 할 수 있습니다. 
   - 추가적인 회원 탈퇴 구현
   ### 3. 고객은 로그인 이후 가계부 관련 아래의 행동을 할 수 있습니다. 
